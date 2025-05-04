@@ -11,11 +11,28 @@ import {
   Modal,
   ActivityIndicator
 } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp
 } from 'react-native-responsive-screen';
+import axios from 'axios';
+
+// 1. Configuração da API (ALTERE ESTE VALOR)
+const API_URL = 'http://SEU_IP:8080/api/alunos';
+
+// 2. Interceptor global para tratamento de erros
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    console.error('Erro na API:', error.response?.data);
+    if (error.response?.status === 401) {
+      const router = useRouter();
+      router.replace('/');
+    }
+    return Promise.reject(error);
+  }
+);
 
 interface Student {
   id: string;
@@ -31,56 +48,52 @@ interface Student {
 }
 
 export default function StudentsScreen() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [refreshTrigger, setRefreshTrigger] = useState(false);
 
-  // Simulação de busca no banco de dados
+  // 3. Função de carregamento dos dados com Axios
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get<Student[]>(API_URL);
+      setStudents(response.data);
+      setError('');
+    } catch (err) {
+      setError('Erro ao carregar dados dos alunos');
+      console.error('Erro na requisição:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 4. Efeito com dependência do refreshTrigger
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Substituir por chamada real à API/banco de dados
-        const mockData: Student[] = await new Promise(resolve =>
-          setTimeout(() => resolve([
-            {
-              id: '1',
-              nome: 'Aluno Exemplo 1',
-              cpf: '123.456.789-00',
-              pai: 'Pai do Aluno 1',
-              mae: 'Mãe do Aluno 1',
-              endereco: 'Rua Exemplo, 123',
-              telefone: '(11) 99999-9999',
-              telefoneResponsavel: '(11) 88888-8888',
-              observacoes: 'Nenhuma observação',
-              dataCadastro: '01/01/2024'
-            },
-            // Adicionar mais alunos conforme necessário
-          ]), 1500)
-        );
-
-        setStudents(mockData);
-      } catch (err) {
-        setError('Erro ao carregar dados');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-  }, []);
+  }, [refreshTrigger]);
 
+  // 5. Função aprimorada para fechar modal + atualizar dados
+  const handleCloseModal = () => {
+    setSelectedStudent(null);
+    setRefreshTrigger(prev => !prev);
+  };
+
+  // 6. Filtragem mantida igual
   const filteredStudents = students.filter(student =>
     [student.nome, student.cpf, student.pai, student.mae]
       .some(field => field.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  // 7. Renderização do modal (alterado onRequestClose)
   const renderDetailModal = () => (
     <Modal
       visible={!!selectedStudent}
       animationType="slide"
-      onRequestClose={() => setSelectedStudent(null)}
+      onRequestClose={handleCloseModal}
     >
       <ScrollView style={styles.modalContainer}>
         {selectedStudent && (
@@ -129,7 +142,7 @@ export default function StudentsScreen() {
 
             <TouchableOpacity
               style={styles.closeButton}
-              onPress={() => setSelectedStudent(null)}
+              onPress={handleCloseModal}
             >
               <Text style={styles.closeButtonText}>Fechar</Text>
             </TouchableOpacity>
@@ -199,6 +212,7 @@ export default function StudentsScreen() {
   );
 }
 
+// 8. Estilos mantidos EXATAMENTE IGUAIS
 const styles = StyleSheet.create({
   container: {
     flex: 1,

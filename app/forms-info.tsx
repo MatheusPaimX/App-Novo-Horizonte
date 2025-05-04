@@ -1,14 +1,15 @@
+import { Link, router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { Link, router } from 'expo-router';
 import MaskInput from 'react-native-mask-input';
+import api from './api/axiosInstance';
 
 const FinalScreen = () => {
   // Estados
@@ -19,6 +20,28 @@ const FinalScreen = () => {
 
   // Máscaras
   const telefoneMask = ['(', /\d/, /\d/, ')', ' ', /\d/, /\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/, /\d/];
+
+  const handleSubmit = async () => {
+    const formData = {
+      resideCom,
+      responsavelFinanceiro,
+      telefoneFinanceiro,
+      pessoasAutorizadas,
+    };
+
+    try {
+      // Enviar os dados para o backend
+      const response = await api.post('/alunos', formData);
+      console.log('Dados enviados com sucesso:', response.data);
+
+      // Redirecionar após o envio bem-sucedido
+      alert('Cadastro realizado com sucesso!');
+      router.push('/home');
+    } catch (error) {
+      console.error('Erro ao enviar os dados:', error);
+      alert('Erro ao enviar os dados. Tente novamente.');
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -96,7 +119,7 @@ const FinalScreen = () => {
       {/* Botão Cadastrar */}
       <TouchableOpacity
         style={styles.button}
-        onPress={() => router.push('/')}
+        onPress={handleSubmit} // Chama a função de envio
       >
         <Text style={styles.buttonText}>Cadastrar</Text>
       </TouchableOpacity>

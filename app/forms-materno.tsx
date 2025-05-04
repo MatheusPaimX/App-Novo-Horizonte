@@ -44,6 +44,7 @@ export default function FamiliaresMaternoScreen() {
   const [errors, setErrors] = useState<Record<FormField, string>>({} as Record<FormField, string>);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const validateField = useCallback(debounce((field: FormField, value: string) => {
     setErrors(prev => {
       const newErrors = { ...prev };
@@ -102,7 +103,7 @@ export default function FamiliaresMaternoScreen() {
       }
       setIsSubmitting(false);
     }, 100);
-  }, [errors]);
+  }, [errors, validateField]);
 
   return (
     <KeyboardAvoidingView

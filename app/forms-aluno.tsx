@@ -1,18 +1,19 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableOpacity
-} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { router } from 'expo-router';
-import MaskInput from 'react-native-mask-input';
 import { debounce } from 'lodash';
+import React, { useCallback, useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import MaskInput from 'react-native-mask-input';
+import api from './api/axiosInstance'; // Importe a instância do Axios
 
 type FormField = keyof typeof initialFormState;
 
@@ -29,8 +30,9 @@ const initialFormState = {
   matricula: '',
   sexo: '',
   turno: '',
-  sangue: '',
-  raca: ''
+  tipoSanguineo: '',
+  raca: '',
+  anoLetivo:'',
 };
 
 const racasOptions = [
@@ -79,7 +81,7 @@ export default function RegisterScreen() {
 
         case 'sexo':
         case 'turno':
-        case 'sangue':
+        case 'tipoSanguineo':
         case 'raca':
           if (!value.trim()) {
             newErrors[field] = 'Selecione uma opção';
@@ -101,17 +103,28 @@ export default function RegisterScreen() {
     validateField(field, value);
   }, [validateField]);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     setIsSubmitting(true);
     validateField.flush();
 
-    setTimeout(() => {
-      if (Object.keys(errors).length === 0) {
+    if (Object.keys(errors).length === 0) {
+      try {
+        // Enviar os dados do formulário para o backend
+        const response = await api.post('/alunos', formData);
+        console.log('Resposta do servidor:', response.data);
+
+        // Redirecionar para a próxima tela
         router.push('/forms-materno');
+      } catch (error) {
+        console.error('Erro ao enviar os dados:', error);
+        alert('Erro ao enviar os dados. Tente novamente.');
+      } finally {
+        setIsSubmitting(false);
       }
+    } else {
       setIsSubmitting(false);
-    }, 100);
-  }, [errors]);
+    }
+  }, [errors, formData, validateField]);
 
   const renderPicker = useCallback(({
     field,
@@ -119,7 +132,7 @@ export default function RegisterScreen() {
     placeholder
   }: {
     field: FormField,
-    items: Array<{ label: string, value: string }>,
+    items: { label: string, value: string }[],
     placeholder: string
   }) => (
     <View style={styles.pickerContainer}>
@@ -229,6 +242,7 @@ export default function RegisterScreen() {
               style={styles.input}
               placeholder="Ano Letivo"
               value="2025"
+              onChangeText={(v) => handleChange('anoLetivo', v)}
               editable={false}
             />
             {errors.rg && <Text style={styles.errorText}>{errors.rg}</Text>}
@@ -278,7 +292,7 @@ export default function RegisterScreen() {
             })}
 
             {renderPicker({
-              field: 'sangue',
+              field: 'tipoSanguineo',
               items: [
                 { label: 'A+', value: 'A+' },
                 { label: 'A-', value: 'A-' },
@@ -399,6 +413,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  backButton: {
+    marginTop: 8,
+    alignItems: 'center',
   },
   backLink: {
     color: '#902121',
