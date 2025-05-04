@@ -16,6 +16,7 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp
 } from 'react-native-responsive-screen';
+import api from './api/axiosInstance'; // Importando o axiosInstance
 
 type FormField = keyof typeof initialFormState;
 
