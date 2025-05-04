@@ -1,7 +1,7 @@
 import { Picker } from '@react-native-picker/picker';
 import { router } from 'expo-router';
 import { debounce } from 'lodash';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -52,7 +52,7 @@ export default function RegisterScreen() {
   const [errors, setErrors] = useState<Record<FormField, string>>({} as Record<FormField, string>);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const validateField = useCallback(debounce((field: FormField, value: string) => {
+  const validateField = useMemo(() => debounce((field: FormField, value: string) => {
     setErrors(prev => {
       const newErrors = { ...prev };
 
@@ -241,9 +241,9 @@ export default function RegisterScreen() {
             <TextInput
               style={styles.input}
               placeholder="Ano Letivo"
-              value="2025"
+              value={formData.anoLetivo}
               onChangeText={(v) => handleChange('anoLetivo', v)}
-              editable={false}
+              keyboardType="number-pad"
             />
             {errors.rg && <Text style={styles.errorText}>{errors.rg}</Text>}
           </View>

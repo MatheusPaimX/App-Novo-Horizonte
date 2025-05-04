@@ -1,31 +1,53 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity
-} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Link, router } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import api from './api/axiosInstance';
 
-const ObservacoesScreen = () => {
-  // Estados para todos os campos
-  const [matricula, setMatricula] = useState('');
-  const [escola, setEscola] = useState('');
-  const [irmaos, setIrmaos] = useState('');
-  const [irmaosNomes, setIrmaosNomes] = useState('');
-  const [especialista, setEspecialista] = useState('');
-  const [especialistaTipo, setEspecialistaTipo] = useState('');
-  const [alergias, setAlergias] = useState('');
-  const [alergiaTipo, setAlergiaTipo] = useState('');
-  const [medicamento, setMedicamento] = useState('');
-  const [medicamentoTipo, setMedicamentoTipo] = useState('');
+type FormField = keyof typeof initialFormState;
+
+const initialFormState = {
+  matriculaTipo:'',
+   escola:'',
+  temIrmaos:'',
+  irmaosNome:'',
+  temEspecialista:'',
+  especialista: '',
+  temAlergias: '',
+  alergia:'',
+  temMedicamento:'',
+  medicamento:'',
+};
+
+export default function ObservacoesScreen() {
+  const [formData, setFormData] = useState(initialFormState);
+
+  const handleChange = useCallback((field: FormField, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleSubmit = async () => {
+    try {
+      const response = await api.post('/observacoes', formData);
+      console.log('Dados enviados com sucesso:', response.data);
+
+      alert('Dados de observações cadastrados com sucesso!');
+      router.push('/forms-info');
+    } catch (error) {
+      console.error('Erro ao enviar os dados:', error);
+      alert('Erro ao enviar os dados. Tente novamente.');
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Seção Observações */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Observações</Text>
 
@@ -34,8 +56,8 @@ const ObservacoesScreen = () => {
           <Text style={styles.label}>Matrícula</Text>
           <View style={styles.pickerContainer}>
             <Picker
-              selectedValue={matricula}
-              onValueChange={setMatricula}
+              selectedValue={formData.matriculaTipo}
+              onValueChange={(v) => handleChange('matriculaTipo', v)}
               dropdownIconColor="#666">
               <Picker.Item label="Selecione" value="" />
               <Picker.Item label="Inicial" value="inicial" />
@@ -43,12 +65,12 @@ const ObservacoesScreen = () => {
               <Picker.Item label="Transferência Particular" value="transferencia_particular" />
             </Picker>
           </View>
-          {(matricula === 'transferencia_municipal_estadual' || matricula === 'transferencia_particular') && (
+          {(formData.escola === 'transferencia_municipal_estadual' || formData.escola === 'transferencia_particular') && (
             <TextInput
               style={styles.input}
               placeholder="Qual Escola"
-              value={escola}
-              onChangeText={setEscola}
+              value={formData.escola}
+              onChangeText={(v) => handleChange('escola', v)}
             />
           )}
         </View>
@@ -58,20 +80,20 @@ const ObservacoesScreen = () => {
           <Text style={styles.label}>Irmão(s)</Text>
           <View style={styles.pickerContainer}>
             <Picker
-              selectedValue={irmaos}
-              onValueChange={setIrmaos}
+              selectedValue={formData.temIrmaos}
+              onValueChange={(v) => handleChange('temIrmaos', v)}
               dropdownIconColor="#666">
               <Picker.Item label="Selecione" value="" />
               <Picker.Item label="Sim" value="sim" />
               <Picker.Item label="Não" value="nao" />
             </Picker>
           </View>
-          {irmaos === 'sim' && (
+          {formData.irmaosNome === 'sim' && (
             <TextInput
               style={styles.input}
               placeholder="Qual(s) Irmão(s)?"
-              value={irmaosNomes}
-              onChangeText={setIrmaosNomes}
+              value={formData.irmaosNome}
+              onChangeText={(v) => handleChange('irmaosNome', v)}
             />
           )}
         </View>
@@ -81,20 +103,20 @@ const ObservacoesScreen = () => {
           <Text style={styles.label}>Especialista</Text>
           <View style={styles.pickerContainer}>
             <Picker
-              selectedValue={especialista}
-              onValueChange={setEspecialista}
+              selectedValue={formData.temEspecialista}
+              onValueChange={(v) => handleChange('temEspecialista', v)}
               dropdownIconColor="#666">
               <Picker.Item label="Selecione" value="" />
               <Picker.Item label="Sim" value="sim" />
               <Picker.Item label="Não" value="nao" />
             </Picker>
           </View>
-          {especialista === 'sim' && (
+          {formData.temEspecialista === 'sim' && (
             <TextInput
               style={styles.input}
               placeholder="Ex: Neurologista, Fonoaudiólogo"
-              value={especialistaTipo}
-              onChangeText={setEspecialistaTipo}
+              value={formData.especialista}
+              onChangeText={(v) => handleChange('especialista', v)}
             />
           )}
         </View>
@@ -104,20 +126,20 @@ const ObservacoesScreen = () => {
           <Text style={styles.label}>Alergias</Text>
           <View style={styles.pickerContainer}>
             <Picker
-              selectedValue={alergias}
-              onValueChange={setAlergias}
+              selectedValue={formData.temAlergias}
+              onValueChange={(v) => handleChange('temAlergias', v)}
               dropdownIconColor="#666">
               <Picker.Item label="Selecione" value="" />
               <Picker.Item label="Sim" value="sim" />
               <Picker.Item label="Não" value="nao" />
             </Picker>
           </View>
-          {alergias === 'sim' && (
+          {formData.alergia === 'sim' && (
             <TextInput
               style={styles.input}
               placeholder="Ex: Alimentação, Remédios..."
-              value={alergiaTipo}
-              onChangeText={setAlergiaTipo}
+              value={formData.alergia}
+              onChangeText={(v) => handleChange('alergia', v)}
             />
           )}
         </View>
@@ -127,20 +149,20 @@ const ObservacoesScreen = () => {
           <Text style={styles.label}>Medicamento em Uso</Text>
           <View style={styles.pickerContainer}>
             <Picker
-              selectedValue={medicamento}
-              onValueChange={setMedicamento}
+              selectedValue={formData.temMedicamento}
+              onValueChange={(v) => handleChange('temMedicamento', v)}
               dropdownIconColor="#666">
               <Picker.Item label="Selecione" value="" />
               <Picker.Item label="Sim" value="sim" />
               <Picker.Item label="Não" value="nao" />
             </Picker>
           </View>
-          {medicamento === 'sim' && (
+          {formData.medicamento === 'sim' && (
             <TextInput
               style={styles.input}
               placeholder="Qual medicamento?"
-              value={medicamentoTipo}
-              onChangeText={setMedicamentoTipo}
+              value={formData.medicamento}
+              onChangeText={(v) => handleChange('medicamento', v)}
             />
           )}
         </View>
@@ -149,7 +171,7 @@ const ObservacoesScreen = () => {
       {/* Botões */}
       <TouchableOpacity
         style={styles.button}
-        onPress={() => router.push('/forms-info')}
+        onPress={handleSubmit}
       >
         <Text style={styles.buttonText}>Próximo</Text>
       </TouchableOpacity>
@@ -159,7 +181,7 @@ const ObservacoesScreen = () => {
       </Link>
     </ScrollView>
   );
-};
+}
 
 // Estilos idênticos aos formulários anteriores
 const styles = StyleSheet.create({
@@ -223,5 +245,3 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 });
-
-export default ObservacoesScreen;

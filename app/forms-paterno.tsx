@@ -1,41 +1,55 @@
-import React, { useState } from 'react';
+import { Link, router } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
-  StyleSheet,
-  View,
-  Text,
-  TextInput,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
-  TouchableOpacity
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { Link, router } from 'expo-router';
 import MaskInput from 'react-native-mask-input';
+import api from './api/axiosInstance';
+
+type FormField = keyof typeof initialFormState;
+
+const initialFormState = {
+  nomePai: '',
+  cepPai: '',
+  telefonePai: '',
+  trabalhoPai: '',
+  nascimentoPai: '',
+  cpfPai: '',
+  emailPai: '',
+  telefoneTrabalhoPai: '',
+  enderecoPai: '',
+  rgPai: '',
+  profissaoPai: ''
+};
+
+const cepMask = [/\d/, /\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/];
+const telefoneMask = ['(', /\d/, /\d/, ')', ' ', /\d/, /\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/, /\d/];
+const cpfMask = [/\d/, /\d/, /\d/, '.', /\d/, /\d/, /\d/, '.', /\d/, /\d/, /\d/, '-', /\d/, /\d/];
+const rgMask = [/\d/, /\d/, '.', /\d/, /\d/, /\d/, '.', /\d/, /\d/, /\d/, '-', /\d/];
+const dataMask = [/\d/, /\d/, '/', /\d/, /\d/, '/', /\d/, /\d/, /\d/, /\d/];
 
 export default function FamiliaresPaternoScreen() {
-  // Estados para Paterno
-  const [nomePaterno, setNomePaterno] = useState('');
-  const [cepPaterno, setCepPaterno] = useState('');
-  const [telefonePaterno, setTelefonePaterno] = useState('');
-  const [trabalhoPaterno, setTrabalhoPaterno] = useState('');
-  const [nascimentoPaterno, setNascimentoPaterno] = useState('');
-  const [cpfPaterno, setCpfPaterno] = useState('');
-  const [emailPaterno, setEmailPaterno] = useState('');
-  const [telefoneTrabalhoPaterno, setTelefoneTrabalhoPaterno] = useState('');
-  const [enderecoPaterno, setEnderecoPaterno] = useState('');
-  const [rgPaterno, setRgPaterno] = useState('');
-  const [profissaoPaterno, setProfissaoPaterno] = useState('');
+  const [formData, setFormData] = useState(initialFormState);
 
-  // Máscaras (iguais à tela materna)
-  const cepMask = [/\d/, /\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/];
-  const telefoneMask = ['(', /\d/, /\d/, ')', ' ', /\d/, /\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/, /\d/];
-  const cpfMask = [/\d/, /\d/, /\d/, '.', /\d/, /\d/, /\d/, '.', /\d/, /\d/, /\d/, '-', /\d/, /\d/];
-  const rgMask = [/\d/, /\d/, '.', /\d/, /\d/, /\d/, '.', /\d/, /\d/, /\d/, '-', /\d/];
-  const dataMask = [/\d/, /\d/, '/', /\d/, /\d/, '/', /\d/, /\d/, /\d/, /\d/];
+  const handleChange = useCallback((field: FormField, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
 
-  const handleSubmit = () => {
-    // Validação igual à tela materna
-    router.push('/confirmacao'); // Ajuste para próxima tela do fluxo
+  const handleSubmit = async () => {
+    try {
+      const response = await api.post('/paterno', formData);
+      console.log('Dados enviados com sucesso:', response.data);
+      router.push('/forms-obs');
+    } catch (error) {
+      console.error('Erro ao enviar os dados:', error);
+    }
   };
 
   return (
@@ -56,8 +70,8 @@ export default function FamiliaresPaternoScreen() {
             <TextInput
               style={styles.inputFull}
               placeholder="Nome do Responsável Paterno"
-              value={nomePaterno}
-              onChangeText={setNomePaterno}
+              value={formData.nomePai}
+              onChangeText={(v) => handleChange('nomePai', v)}
             />
 
             {/* CEP e Telefone */}
@@ -65,16 +79,16 @@ export default function FamiliaresPaternoScreen() {
               <MaskInput
                 style={styles.input}
                 placeholder="CEP"
-                value={cepPaterno}
-                onChangeText={setCepPaterno}
+                value={formData.cepPai}
+                onChangeText={(v) => handleChange('cepPai', v)}
                 mask={cepMask}
                 keyboardType="numeric"
               />
               <MaskInput
                 style={styles.input}
                 placeholder="Telefone"
-                value={telefonePaterno}
-                onChangeText={setTelefonePaterno}
+                value={formData.telefonePai}
+                onChangeText={(v) => handleChange('telefonePai', v)}
                 mask={telefoneMask}
                 keyboardType="phone-pad"
               />
@@ -84,8 +98,8 @@ export default function FamiliaresPaternoScreen() {
             <TextInput
               style={styles.inputFull}
               placeholder="Local de Trabalho"
-              value={trabalhoPaterno}
-              onChangeText={setTrabalhoPaterno}
+              value={formData.trabalhoPai}
+              onChangeText={(v) => handleChange('trabalhoPai', v)}
             />
 
             {/* Nascimento e CPF */}
@@ -93,16 +107,16 @@ export default function FamiliaresPaternoScreen() {
               <MaskInput
                 style={styles.input}
                 placeholder="Data de Nascimento"
-                value={nascimentoPaterno}
-                onChangeText={setNascimentoPaterno}
+                value={formData.nascimentoPai}
+                onChangeText={(v) => handleChange('nascimentoPai', v)}
                 mask={dataMask}
                 keyboardType="numeric"
               />
               <MaskInput
                 style={styles.input}
                 placeholder="CPF"
-                value={cpfPaterno}
-                onChangeText={setCpfPaterno}
+                value={formData.cpfPai}
+                onChangeText={(v) => handleChange('cpfPai', v)}
                 mask={cpfMask}
                 keyboardType="numeric"
               />
@@ -112,8 +126,8 @@ export default function FamiliaresPaternoScreen() {
             <TextInput
               style={styles.inputFull}
               placeholder="Email"
-              value={emailPaterno}
-              onChangeText={setEmailPaterno}
+              value={formData.emailPai}
+              onChangeText={(v) => handleChange('emailPai', v)}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -123,16 +137,16 @@ export default function FamiliaresPaternoScreen() {
               <MaskInput
                 style={styles.input}
                 placeholder="Telefone do Trabalho"
-                value={telefoneTrabalhoPaterno}
-                onChangeText={setTelefoneTrabalhoPaterno}
+                value={formData.telefoneTrabalhoPai}
+                onChangeText={(v) => handleChange('telefoneTrabalhoPai', v)}
                 mask={telefoneMask}
                 keyboardType="phone-pad"
               />
               <TextInput
                 style={styles.input}
                 placeholder="Endereço"
-                value={enderecoPaterno}
-                onChangeText={setEnderecoPaterno}
+                value={formData.enderecoPai}
+                onChangeText={(v) => handleChange('enderecoPai', v)}
               />
             </View>
 
@@ -141,25 +155,24 @@ export default function FamiliaresPaternoScreen() {
               <MaskInput
                 style={styles.input}
                 placeholder="RG"
-                value={rgPaterno}
-                onChangeText={setRgPaterno}
+                value={formData.rgPai}
+                onChangeText={(v) => handleChange('rgPai', v)}
                 mask={rgMask}
                 keyboardType="numeric"
               />
               <TextInput
                 style={styles.input}
                 placeholder="Profissão"
-                value={profissaoPaterno}
-                onChangeText={setProfissaoPaterno}
+                value={formData.profissaoPai}
+                onChangeText={(v) => handleChange('profissaoPai', v)}
               />
             </View>
           </View>
         </View>
 
         {/* Botões */}
-        <TouchableOpacity style={styles.button}
-        onPress={() => router.push('/forms-obs') }>
-          <Text style={styles.buttonText}>Proxímo</Text>
+        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+          <Text style={styles.buttonText}>Próximo</Text>
         </TouchableOpacity>
 
         <Link href="/forms-materno" style={styles.backLink}>

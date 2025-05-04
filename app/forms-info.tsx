@@ -1,5 +1,5 @@
 import { Link, router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -11,30 +11,29 @@ import {
 import MaskInput from 'react-native-mask-input';
 import api from './api/axiosInstance';
 
-const FinalScreen = () => {
-  // Estados
-  const [resideCom, setResideCom] = useState('');
-  const [responsavelFinanceiro, setResponsavelFinanceiro] = useState('');
-  const [telefoneFinanceiro, setTelefoneFinanceiro] = useState('');
-  const [pessoasAutorizadas, setPessoasAutorizadas] = useState('');
+type FormField = 'reside' | 'respNome' | 'respTelefone' | 'pessoasAutorizadas';
 
-  // Máscaras
+const initialFormState = {
+  reside: '',
+  respNome: '',
+  respTelefone: '',
+  pessoasAutorizadas: '',
+};
+
+const FinalScreen = () => {
+  const [formData, setFormData] = useState(initialFormState);
+
+  const handleChange = useCallback((field: FormField, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
   const telefoneMask = ['(', /\d/, /\d/, ')', ' ', /\d/, /\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/, /\d/];
 
   const handleSubmit = async () => {
-    const formData = {
-      resideCom,
-      responsavelFinanceiro,
-      telefoneFinanceiro,
-      pessoasAutorizadas,
-    };
-
     try {
-      // Enviar os dados para o backend
-      const response = await api.post('/alunos', formData);
+      const response = await api.post('/info', formData);
       console.log('Dados enviados com sucesso:', response.data);
 
-      // Redirecionar após o envio bem-sucedido
       alert('Cadastro realizado com sucesso!');
       router.push('/home');
     } catch (error) {
@@ -51,8 +50,8 @@ const FinalScreen = () => {
         <TextInput
           style={styles.inputFull}
           placeholder="Ex: Pai, Mãe, Avós..."
-          value={resideCom}
-          onChangeText={setResideCom}
+          value={formData.reside}
+          onChangeText={(v) => handleChange('reside', v)}
         />
       </View>
 
@@ -63,14 +62,14 @@ const FinalScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Nome do Responsável"
-            value={responsavelFinanceiro}
-            onChangeText={setResponsavelFinanceiro}
+            value={formData.respNome}
+            onChangeText={(v) => handleChange('respNome', v)}
           />
           <MaskInput
             style={styles.input}
             placeholder="Telefone"
-            value={telefoneFinanceiro}
-            onChangeText={setTelefoneFinanceiro}
+            value={formData.respTelefone}
+            onChangeText={(v) => handleChange('respTelefone', v)}
             mask={telefoneMask}
             keyboardType="phone-pad"
           />
@@ -83,8 +82,8 @@ const FinalScreen = () => {
         <TextInput
           style={styles.inputFull}
           placeholder="Nomes completos separados por vírgula"
-          value={pessoasAutorizadas}
-          onChangeText={setPessoasAutorizadas}
+          value={formData.pessoasAutorizadas}
+          onChangeText={(v) => handleChange('pessoasAutorizadas', v)}
           multiline
         />
       </View>
@@ -92,7 +91,7 @@ const FinalScreen = () => {
       {/* Aviso Documentos */}
       <View style={styles.alertBox}>
         <Text style={styles.alertText}>
-          OBS: Só clique no botão "Envio de Documentos" se você for enviar os documentos por e-mail.
+          OBS: Só clique no botão &quot;Envio de Documentos&quot; se você for enviar os documentos por e-mail.
           Se for entregar pessoalmente ou já entregou, não precisa clicar!
         </Text>
       </View>
@@ -119,7 +118,7 @@ const FinalScreen = () => {
       {/* Botão Cadastrar */}
       <TouchableOpacity
         style={styles.button}
-        onPress={handleSubmit} // Chama a função de envio
+        onPress={handleSubmit}
       >
         <Text style={styles.buttonText}>Cadastrar</Text>
       </TouchableOpacity>

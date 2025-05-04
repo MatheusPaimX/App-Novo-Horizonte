@@ -1,37 +1,36 @@
-import React, { useState, useCallback } from 'react';
+import { router } from 'expo-router';
+import { debounce } from 'lodash';
+import React, { useCallback, useState } from 'react';
 import {
-  StyleSheet,
-  View,
-  Text,
-  TextInput,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
-  TouchableOpacity
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { router } from 'expo-router';
 import MaskInput from 'react-native-mask-input';
-import { debounce } from 'lodash';
 import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp
+  heightPercentageToDP as hp,
+  widthPercentageToDP as wp
 } from 'react-native-responsive-screen';
-import api from './api/axiosInstance'; // Importando o axiosInstance
-
+import api from './api/axiosInstance';
 type FormField = keyof typeof initialFormState;
 
 const initialFormState = {
-  nomeMaterno: '',
-  cepMaterno: '',
-  telefoneMaterno: '',
-  trabalhoMaterno: '',
-  nascimentoMaterno: '',
-  cpfMaterno: '',
-  emailMaterno: '',
-  telefoneTrabalhoMaterno: '',
-  enderecoMaterno: '',
-  rgMaterno: '',
-  profissaoMaterno: ''
+  nomeMae: '',
+  cepMae: '',
+  telefoneMae: '',
+  trabalhoMae: '',
+  nascimentoMae: '',
+  cpfMae: '',
+  emailMae: '',
+  telefoneTrabalhoMae: '',
+  enderecoMae: '',
+  rgMae: '',
+  profissaoMae: ''
 };
 
 const cepMask = [/\d/, /\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/];
@@ -55,32 +54,32 @@ export default function FamiliaresMaternoScreen() {
       }
 
       switch(field) {
-        case 'cpfMaterno':
+        case 'cpfMae':
           if (value.replace(/\D/g, '').length !== 11) {
             newErrors[field] = 'CPF inválido';
           }
           break;
 
-        case 'nascimentoMaterno':
+        case 'nascimentoMae':
           if (!/^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/.test(value)) {
             newErrors[field] = 'Data inválida';
           }
           break;
 
-        case 'rgMaterno':
+        case 'rgMae':
           if (value.replace(/\D/g, '').length !== 9) {
             newErrors[field] = 'RG inválido';
           }
           break;
 
-        case 'emailMaterno':
+        case 'emailMae':
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
             newErrors[field] = 'E-mail inválido';
           }
           break;
 
         default:
-          if (!value.trim() && field !== 'trabalhoMaterno' && field !== 'enderecoMaterno') {
+          if (!value.trim() && field !== 'trabalhoMae' && field !== 'enderecoMae') {
             newErrors[field] = 'Campo obrigatório';
           }
       }
@@ -94,17 +93,30 @@ export default function FamiliaresMaternoScreen() {
     validateField(field, value);
   }, [validateField]);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     setIsSubmitting(true);
-    validateField.flush();
+    validateField.flush(); // Garante que todas as validações pendentes sejam executadas
 
-    setTimeout(() => {
-      if (Object.keys(errors).length === 0) {
+    if (Object.keys(errors).length === 0) {
+      try {
+        // Enviar os dados do formulário para o backend
+        const response = await api.post('/materno', formData);
+        console.log('Dados enviados com sucesso:', response.data);
+
+        // Redirecionar para a próxima tela
+        alert('Dados do responsável materno cadastrados com sucesso!');
         router.push('/forms-paterno');
+      } catch (error) {
+        console.error('Erro ao enviar os dados:', error);
+        alert('Erro ao enviar os dados. Tente novamente.');
+      } finally {
+        setIsSubmitting(false);
       }
+    } else {
+      alert('Por favor, corrija os erros antes de enviar.');
       setIsSubmitting(false);
-    }, 100);
-  }, [errors, validateField]);
+    }
+  }, [errors, formData, validateField]);
 
   return (
     <KeyboardAvoidingView
@@ -127,8 +139,8 @@ export default function FamiliaresMaternoScreen() {
             style={styles.fullWidthInput}
             placeholder="Nome completo"
             placeholderTextColor="#666"
-            value={formData.nomeMaterno}
-            onChangeText={(v) => handleChange('nomeMaterno', v)}
+            value={formData.nomeMae}
+            onChangeText={(v) => handleChange('nomeMae', v)}
           />
 
           <View style={styles.row}>
@@ -136,8 +148,8 @@ export default function FamiliaresMaternoScreen() {
               style={styles.halfWidthInput}
               placeholder="CEP"
               placeholderTextColor="#666"
-              value={formData.cepMaterno}
-              onChangeText={(v) => handleChange('cepMaterno', v)}
+              value={formData.cepMae}
+             
               mask={cepMask}
               keyboardType="number-pad"
             />
@@ -145,8 +157,8 @@ export default function FamiliaresMaternoScreen() {
               style={styles.halfWidthInput}
               placeholder="Telefone"
               placeholderTextColor="#666"
-              value={formData.telefoneMaterno}
-              onChangeText={(v) => handleChange('telefoneMaterno', v)}
+              value={formData.telefoneMae}
+              onChangeText={(v) => handleChange('telefoneMae', v)}
               mask={telefoneMask}
               keyboardType="phone-pad"
             />
@@ -156,8 +168,8 @@ export default function FamiliaresMaternoScreen() {
             style={styles.fullWidthInput}
             placeholder="Local de trabalho"
             placeholderTextColor="#666"
-            value={formData.trabalhoMaterno}
-            onChangeText={(v) => handleChange('trabalhoMaterno', v)}
+            value={formData.trabalhoMae}
+            onChangeText={(v) => handleChange('trabalhoMae', v)}
           />
 
           <View style={styles.row}>
@@ -165,8 +177,8 @@ export default function FamiliaresMaternoScreen() {
               style={styles.halfWidthInput}
               placeholder="Data de nascimento"
               placeholderTextColor="#666"
-              value={formData.nascimentoMaterno}
-              onChangeText={(v) => handleChange('nascimentoMaterno', v)}
+              value={formData.nascimentoMae}
+              onChangeText={(v) => handleChange('nascimentoMae', v)}
               mask={dataMask}
               keyboardType="number-pad"
             />
@@ -174,8 +186,8 @@ export default function FamiliaresMaternoScreen() {
               style={styles.halfWidthInput}
               placeholder="CPF"
               placeholderTextColor="#666"
-              value={formData.cpfMaterno}
-              onChangeText={(v) => handleChange('cpfMaterno', v)}
+              value={formData.cpfMae}
+              onChangeText={(v) => handleChange('cpfMae', v)}
               mask={cpfMask}
               keyboardType="number-pad"
             />
@@ -185,8 +197,8 @@ export default function FamiliaresMaternoScreen() {
             style={styles.fullWidthInput}
             placeholder="E-mail"
             placeholderTextColor="#666"
-            value={formData.emailMaterno}
-            onChangeText={(v) => handleChange('emailMaterno', v)}
+            value={formData.emailMae}
+            onChangeText={(v) => handleChange('emailMae', v)}
             keyboardType="email-address"
             autoCapitalize="none"
           />
@@ -196,8 +208,8 @@ export default function FamiliaresMaternoScreen() {
               style={styles.halfWidthInput}
               placeholder="Telefone do trabalho"
               placeholderTextColor="#666"
-              value={formData.telefoneTrabalhoMaterno}
-              onChangeText={(v) => handleChange('telefoneTrabalhoMaterno', v)}
+              value={formData.telefoneTrabalhoMae}
+              onChangeText={(v) => handleChange('telefoneTrabalhoMae', v)}
               mask={telefoneMask}
               keyboardType="phone-pad"
             />
@@ -205,8 +217,8 @@ export default function FamiliaresMaternoScreen() {
               style={styles.halfWidthInput}
               placeholder="Endereço completo"
               placeholderTextColor="#666"
-              value={formData.enderecoMaterno}
-              onChangeText={(v) => handleChange('enderecoMaterno', v)}
+              value={formData.enderecoMae}
+              onChangeText={(v) => handleChange('enderecoMae', v)}
             />
           </View>
 
@@ -215,8 +227,8 @@ export default function FamiliaresMaternoScreen() {
               style={styles.halfWidthInput}
               placeholder="RG"
               placeholderTextColor="#666"
-              value={formData.rgMaterno}
-              onChangeText={(v) => handleChange('rgMaterno', v)}
+              value={formData.rgMae}
+              onChangeText={(v) => handleChange('rgMae', v)}
               mask={rgMask}
               keyboardType="number-pad"
             />
@@ -224,8 +236,8 @@ export default function FamiliaresMaternoScreen() {
               style={styles.halfWidthInput}
               placeholder="Profissão"
               placeholderTextColor="#666"
-              value={formData.profissaoMaterno}
-              onChangeText={(v) => handleChange('profissaoMaterno', v)}
+              value={formData.profissaoMae}
+              onChangeText={(v) => handleChange('profissaoMae', v)}
             />
           </View>
 
