@@ -44,7 +44,7 @@ export default function FamiliaresPaternoScreen() {
 
   const handleSubmit = async () => {
     try {
-      const response = await api.post('/paterno', formData);
+      const response = await api.post('/pais', formData);
       console.log('Dados enviados com sucesso:', response.data);
       router.push('/forms-obs');
     } catch (error) {

@@ -100,7 +100,7 @@ export default function FamiliaresMaternoScreen() {
     if (Object.keys(errors).length === 0) {
       try {
         // Enviar os dados do formulário para o backend
-        const response = await api.post('/materno', formData);
+        const response = await api.post('/maes', formData);
         console.log('Dados enviados com sucesso:', response.data);
 
         // Redirecionar para a próxima tela
@@ -144,12 +144,12 @@ export default function FamiliaresMaternoScreen() {
           />
 
           <View style={styles.row}>
-            <MaskInput
+          <MaskInput
               style={styles.halfWidthInput}
               placeholder="CEP"
               placeholderTextColor="#666"
               value={formData.cepMae}
-             
+              onChangeText={(v) => handleChange('cepMae', v)} // Adicione esta linha!
               mask={cepMask}
               keyboardType="number-pad"
             />

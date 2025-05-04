@@ -1,160 +1,156 @@
-import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import {
-  StyleSheet,
-  View,
-  Text,
+  ActivityIndicator,
   ScrollView,
+  StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  Modal,
-  ActivityIndicator
+  View
 } from 'react-native';
-import { Link, useRouter } from 'expo-router';
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp
-} from 'react-native-responsive-screen';
-import axios from 'axios';
 
-// 1. Configuração da API (ALTERE ESTE VALOR)
-const API_URL = 'http://SEU_IP:8080/api/alunos';
+// Configuração da API base
+const API_BASE_URL = 'http://192.168.0.105:8080';
 
-// 2. Interceptor global para tratamento de erros
-axios.interceptors.response.use(
-  response => response,
-  error => {
-    console.error('Erro na API:', error.response?.data);
-    if (error.response?.status === 401) {
-      const router = useRouter();
-      router.replace('/');
-    }
-    return Promise.reject(error);
-  }
-);
+interface Mae {
+  nomeMae: string;
+  enderecoMae: string;
+  telefoneMae: string;
+  trabalhoMae: string;
+  telefoneTrabalhoMae: string;
+}
 
-interface Student {
-  id: string;
+interface Pai {
+  nomePai: string;
+  enderecoPai: string;
+  telefonePai: string;
+  trabalhoPai: string;
+  telefoneTrabalhoPai: string;
+}
+
+interface Observacoes {
+  temEspecialista: boolean;
+  especialista: string;
+  temAlergias: boolean;
+  alergia: string;
+  temMedicamento: boolean;
+  Medicamento: string;
+  reside: string;
+  respNome: string;
+  respTelefone: string;
+  pessoasAutorizadas: string[];
+}
+
+interface Aluno {
+  id: number;
   nome: string;
+  sexo: string;
   cpf: string;
-  pai: string;
-  mae: string;
-  endereco: string;
-  telefone: string;
-  telefoneResponsavel: string;
-  observacoes: string;
-  dataCadastro: string;
+  rg: string;
+  anoLetivo: string;
+  turno: string;
+  tipoSanguineo: string;
+  mae: Mae;
+  pai: Pai;
+  observacoes: Observacoes;
 }
 
 export default function StudentsScreen() {
-  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [students, setStudents] = useState<Student[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [alunos, setAlunos] = useState<Aluno[]>([]);
+  const [selectedAluno, setSelectedAluno] = useState<Aluno | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [refreshTrigger, setRefreshTrigger] = useState(false);
 
-  // 3. Função de carregamento dos dados com Axios
-  const fetchData = async () => {
+  const fetchAlunos = async () => {
     try {
       setLoading(true);
-      const response = await axios.get<Student[]>(API_URL);
-      setStudents(response.data);
+      const [alunosRes, maesRes, paisRes, obsRes] = await Promise.all([
+        axios.get(`${API_BASE_URL}/alunos/dto`),
+        axios.get(`${API_BASE_URL}/maes/dto`),
+        axios.get(`${API_BASE_URL}/pais/dto`),
+        axios.get(`${API_BASE_URL}/observacoes/dto`)
+      ]);
+
+      const alunosCompletos = alunosRes.data.map((aluno: any) => ({
+        ...aluno,
+        mae: maesRes.data.find((m: any) => m.id === aluno.id),
+        pai: paisRes.data.find((p: any) => p.id === aluno.id),
+        observacoes: obsRes.data.find((o: any) => o.id === aluno.id)
+      }));
+
+      setAlunos(alunosCompletos);
       setError('');
     } catch (err) {
-      setError('Erro ao carregar dados dos alunos');
-      console.error('Erro na requisição:', err);
+      setError('Erro ao carregar dados');
+      console.error('Erro:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  // 4. Efeito com dependência do refreshTrigger
   useEffect(() => {
-    fetchData();
-  }, [refreshTrigger]);
+    fetchAlunos();
+  }, []);
 
-  // 5. Função aprimorada para fechar modal + atualizar dados
-  const handleCloseModal = () => {
-    setSelectedStudent(null);
-    setRefreshTrigger(prev => !prev);
-  };
-
-  // 6. Filtragem mantida igual
-  const filteredStudents = students.filter(student =>
-    [student.nome, student.cpf, student.pai, student.mae]
-      .some(field => field.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  // 7. Renderização do modal (alterado onRequestClose)
   const renderDetailModal = () => (
-    <Modal
-      visible={!!selectedStudent}
-      animationType="slide"
-      onRequestClose={handleCloseModal}
-    >
-      <ScrollView style={styles.modalContainer}>
-        {selectedStudent && (
-          <>
-            <Text style={styles.modalTitle}>Detalhes do Aluno</Text>
+    <ScrollView style={styles.modalContainer}>
+      {selectedAluno && (
+        <>
+          {/* Seção Aluno */}
+          <Text style={styles.sectionTitle}>Dados do Aluno</Text>
+          <DetailItem label="Nome" value={selectedAluno.nome} />
+          <DetailItem label="Sexo" value={selectedAluno.sexo} />
+          <DetailItem label="CPF" value={selectedAluno.cpf} />
+          <DetailItem label="RG" value={selectedAluno.rg} />
+          <DetailItem label="Ano Letivo" value={selectedAluno.anoLetivo} />
+          <DetailItem label="Turno" value={selectedAluno.turno} />
+          <DetailItem label="Tipo Sanguíneo" value={selectedAluno.tipoSanguineo} />
 
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Nome:</Text>
-              <Text style={styles.detailValue}>{selectedStudent.nome}</Text>
-            </View>
+          {/* Seção Mãe */}
+          <Text style={styles.sectionTitle}>Dados da Mãe</Text>
+          <DetailItem label="Nome" value={selectedAluno.mae.nomeMae} />
+          <DetailItem label="Endereço" value={selectedAluno.mae.enderecoMae} />
+          <DetailItem label="Telefone" value={selectedAluno.mae.telefoneMae} />
+          <DetailItem label="Trabalho" value={selectedAluno.mae.trabalhoMae} />
+          <DetailItem label="Telefone Trabalho" value={selectedAluno.mae.telefoneTrabalhoMae} />
 
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>CPF:</Text>
-              <Text style={styles.detailValue}>{selectedStudent.cpf}</Text>
-            </View>
+          {/* Seção Pai */}
+          <Text style={styles.sectionTitle}>Dados do Pai</Text>
+          <DetailItem label="Nome" value={selectedAluno.pai.nomePai} />
+          <DetailItem label="Endereço" value={selectedAluno.pai.enderecoPai} />
+          <DetailItem label="Telefone" value={selectedAluno.pai.telefonePai} />
+          <DetailItem label="Trabalho" value={selectedAluno.pai.trabalhoPai} />
+          <DetailItem label="Telefone Trabalho" value={selectedAluno.pai.telefoneTrabalhoPai} />
 
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Pai:</Text>
-              <Text style={styles.detailValue}>{selectedStudent.pai}</Text>
-            </View>
+          {/* Seção Observações */}
+          <Text style={styles.sectionTitle}>Observações</Text>
+          <DetailItem label="Especialista" value={selectedAluno.observacoes.especialista} />
+          <DetailItem label="Alergias" value={selectedAluno.observacoes.alergia} />
+          <DetailItem label="Medicamentos" value={selectedAluno.observacoes.Medicamento} />
+          <DetailItem label="Reside com" value={selectedAluno.observacoes.reside} />
+          <DetailItem label="Responsável" value={selectedAluno.observacoes.respNome} />
+          <DetailItem label="Telefone Responsável" value={selectedAluno.observacoes.respTelefone} />
+          <DetailItem 
+            label="Pessoas Autorizadas" 
+            value={selectedAluno.observacoes.pessoasAutorizadas?.join(', ')} 
+          />
 
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Mãe:</Text>
-              <Text style={styles.detailValue}>{selectedStudent.mae}</Text>
-            </View>
-
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Endereço:</Text>
-              <Text style={styles.detailValue}>{selectedStudent.endereco}</Text>
-            </View>
-
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Telefone:</Text>
-              <Text style={styles.detailValue}>{selectedStudent.telefone}</Text>
-            </View>
-
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Contato Responsável:</Text>
-              <Text style={styles.detailValue}>{selectedStudent.telefoneResponsavel}</Text>
-            </View>
-
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Data de Cadastro:</Text>
-              <Text style={styles.detailValue}>{selectedStudent.dataCadastro}</Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={handleCloseModal}
-            >
-              <Text style={styles.closeButtonText}>Fechar</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </ScrollView>
-    </Modal>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setSelectedAluno(null)}
+          >
+            <Text style={styles.closeButtonText}>Fechar</Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </ScrollView>
   );
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#902121" />
       </View>
     );
@@ -162,199 +158,134 @@ export default function StudentsScreen() {
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
+      <View style={styles.centerContainer}>
         <Text style={styles.errorText}>{error}</Text>
       </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Listagem de Alunos</Text>
-          <Text style={styles.sectionTitle}>Busca Avançada</Text>
-        </View>
+    <View style={styles.container}>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Buscar aluno..."
+        placeholderTextColor="#666"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
 
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar por CPF, nome, pai ou mãe..."
-          placeholderTextColor="#666"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-
-        {filteredStudents.map((student) => (
+      <ScrollView>
+        {alunos.filter(a => 
+          a.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          a.cpf.includes(searchQuery)
+        ).map(aluno => (
           <TouchableOpacity
-            key={student.id}
-            style={styles.studentCard}
-            onPress={() => setSelectedStudent(student)}
+            key={aluno.id}
+            style={styles.card}
+            onPress={() => setSelectedAluno(aluno)}
           >
-            <View style={styles.studentInfo}>
-              <Text style={styles.studentName}>{student.nome}</Text>
-              <Text style={styles.studentSubtext}>CPF: {student.cpf}</Text>
-              <Text style={styles.studentSubtext}>Data de Cadastro: {student.dataCadastro}</Text>
-            </View>
-            <Text style={styles.detailsText}>▶</Text>
+            <Text style={styles.cardTitle}>{aluno.nome}</Text>
+            <Text style={styles.cardSubtitle}>{aluno.turno} - {aluno.anoLetivo}</Text>
           </TouchableOpacity>
         ))}
-
-        <Link href="/home" style={styles.backLink}>
-          Voltar para Login
-        </Link>
       </ScrollView>
 
-      {renderDetailModal()}
-    </KeyboardAvoidingView>
+      {selectedAluno && renderDetailModal()}
+    </View>
   );
 }
 
-// 8. Estilos mantidos EXATAMENTE IGUAIS
+const DetailItem = ({ label, value }: { label: string; value: string }) => (
+  <View style={styles.detailItem}>
+    <Text style={styles.detailLabel}>{label}:</Text>
+    <Text style={styles.detailValue}>{value || 'Não informado'}</Text>
+  </View>
+);
+
+// Estilos atualizados
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    padding: 16,
+    backgroundColor: '#f5f5f5'
   },
-  scrollContainer: {
-    flexGrow: 1,
-    padding: wp(4),
-    paddingBottom: hp(4),
-  },
-  header: {
-    backgroundColor: '#902121',
-    paddingVertical: hp(2),
-    borderRadius: wp(2),
-    marginBottom: hp(2),
-  },
-  headerTitle: {
-    color: 'white',
-    fontSize: hp(2.5),
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  sectionTitle: {
-    color: 'white',
-    fontSize: hp(2),
-    textAlign: 'center',
-    marginTop: hp(1),
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   searchInput: {
     backgroundColor: 'white',
-    borderRadius: wp(1.5),
-    padding: wp(3),
-    marginBottom: hp(2),
-    fontSize: hp(1.8),
-    elevation: 2,
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 16,
+    fontSize: 16
   },
-  listContainer: {
+  card: {
     backgroundColor: 'white',
-    borderRadius: wp(2),
-    padding: wp(3),
-    elevation: 2,
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    elevation: 2
   },
-  studentCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingVertical: hp(1.5),
-  },
-  studentInfo: {
-    flex: 1,
-  },
-  studentName: {
-    fontSize: hp(1.9),
-    color: '#333',
+  cardTitle: {
+    fontSize: 18,
     fontWeight: '600',
+    color: '#333'
   },
-  studentCpf: {
-    fontSize: hp(1.6),
+  cardSubtitle: {
+    fontSize: 14,
     color: '#666',
-    marginTop: hp(0.5),
-  },
-  detailsButton: {
-    paddingHorizontal: wp(3),
-  },
-  detailsText: {
-    color: '#902121',
-    fontSize: hp(1.7),
-    fontWeight: '600',
-  },
-  backLink: {
-    color: '#902121',
-    fontSize: hp(1.8),
-    textAlign: 'center',
-    marginTop: hp(3),
-    textDecorationLine: 'underline',
+    marginTop: 4
   },
   modalContainer: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-    padding: wp(5),
+    backgroundColor: 'white',
+    padding: 20,
+    margin: 20,
+    borderRadius: 10
   },
-  modalTitle: {
-    fontSize: hp(2.8),
-    color: '#902121',
+  sectionTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: hp(3),
-    textAlign: 'center',
+    color: '#902121',
+    marginVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    paddingBottom: 5
   },
   detailItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: hp(1.5),
-    padding: hp(1),
-    backgroundColor: '#fff',
-    borderRadius: wp(1),
-    elevation: 1,
+    marginBottom: 10,
+    paddingVertical: 5
   },
   detailLabel: {
-    fontSize: hp(1.8),
+    fontSize: 16,
     color: '#666',
-    fontWeight: '600',
-    width: wp(40),
+    fontWeight: '500',
+    width: '40%'
   },
   detailValue: {
-    fontSize: hp(1.8),
+    fontSize: 16,
     color: '#333',
-    flex: 1,
-    textAlign: 'right',
+    width: '55%',
+    textAlign: 'right'
   },
   closeButton: {
     backgroundColor: '#902121',
-    padding: hp(2),
-    borderRadius: wp(1),
-    marginTop: hp(3),
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 20
   },
   closeButtonText: {
     color: 'white',
-    fontSize: hp(2),
+    fontSize: 16,
     textAlign: 'center',
-    fontWeight: '600',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: hp(5),
+    fontWeight: '600'
   },
   errorText: {
-    color: '#ff4444',
-    fontSize: hp(2),
-    textAlign: 'center',
-  },
-  studentSubtext: {
-    fontSize: hp(1.6),
-    color: '#666',
-    marginTop: hp(0.5),
-  },
+    color: 'red',
+    fontSize: 18,
+    textAlign: 'center'
+  }
 });
